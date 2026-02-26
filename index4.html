@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oleeh Live Command</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root { --primary: #00d1b2; --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 500px; position: relative; }
+        
+        /* Mute Button Styling */
+        .volume-toggle { position: absolute; top: 0; right: 0; background: #2a2a2a; border: 1px solid #444; color: var(--text); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; transition: 0.2s; }
+        .volume-toggle:hover { background: #3a3a3a; }
+        .is-muted { border-color: #ff4444; color: #ff4444; }
+
+        h1 { text-align: center; color: var(--primary); cursor: pointer; user-select: none; margin-bottom: 30px; }
+        #adminPanel { background: #2a2a2a; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none; border: 1px dashed var(--primary); }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #333; background: #121212; color: white; box-sizing: border-box; }
+        
+        .post { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; position: relative; border-left: 5px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.3); animation: slideIn 0.3s ease-out; }
+        .post p { margin: 0 0 12px 0; line-height: 1.5; font-size: 1.1rem; }
+        .post a { color: var(--primary); text-decoration: none; font-weight: bold; font-size: 0.9rem; display: block; margin-bottom: 10px; word-break: break-all; }
+        
+        .meta { font-size: 0.75rem; color: #888; display: flex; gap: 10px; align-items: center; border-top: 1px solid #333; padding-top: 10px; }
+        .time-ago { color: var(--primary); font-weight: bold; }
+        
+        .delete-btn { position: absolute; top: 10px; right: 10px; color: #ff4444; cursor: pointer; font-size: 0.8rem; display: none; }
+        .admin-active .delete-btn { display: block; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <button class="volume-toggle" id="muteBtn" onclick="toggleMute()">
+        <span id="muteIcon">🔊</span> <span id="muteText">Sound On</span>
+    </button>
+
+    <h1 onclick="toggleAdmin()">📡 Oleeh Feed</h1>
+
+    <div id="adminPanel">
+        <strong>Admin Mode</strong>
+        <input type="text" id="msgInput" placeholder="Write a message...">
+        <input type="text" id="linkInput" placeholder="Link (http://...)">
+        <button style="width:100%; padding:12px; background:var(--primary); border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="sendPost()">Broadcast</button>
+    </div>
+
+    <div id="feed">Connecting...</div>
+</div>
+
+<audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3" preload="auto"></audio>
+
+<script>
+    const firebaseConfig = { databaseURL: "https://oleehfeed-default-rtdb.firebaseio.com/" };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database().ref('live_posts');
+
+    let firstLoad = true;
+    let isMuted = false;
+
+    function toggleMute() {
+        isMuted = !isMuted;
+        const btn = document.getElementById('muteBtn');
+        const icon = document.getElementById('muteIcon');
+        const text = document.getElementById('muteText');
+
+        if (isMuted) {
+            btn.classList.add('is-muted');
+            icon.innerText = "🔇";
+            text.innerText = "Muted";
+        } else {
+            btn.classList.remove('is-muted');
+            icon.innerText = "🔊";
+            text.innerText = "Sound On";
+            // Play a tiny sound to "unlock" the browser audio permission
+            document.getElementById('notifSound').play().then(() => {
+                document.getElementById('notifSound').pause();
+                document.getElementById('notifSound').currentTime = 0;
+            }).catch(e => console.log("Audio unlock failed"));
+        }
+    }
+
+    function sendPost() {
+        const msg = document.getElementById('msgInput').value;
+        const url = document.getElementById('linkInput').value;
+        if(!msg) return alert("Enter a message");
+        db.push({ message: msg, link: url, timestamp: Date.now() });
+        document.getElementById('msgInput').value = "";
+        document.getElementById('linkInput').value = "";
+    }
+
+    function timeAgo(date) {
+        const seconds = Math.floor((new Date() - date) / 1000);
+        let interval = Math.floor(seconds / 60);
+        if (interval < 1) return "Just now";
+        if (interval < 60) return interval + "m ago";
+        interval = Math.floor(interval / 60);
+        if (interval < 24) return interval + "h ago";
+        return Math.floor(interval / 24) + "d ago";
+    }
+
+    db.limitToLast(50).on('value', (snapshot) => {
+        const feedDiv = document.getElementById('feed');
+        const data = snapshot.val();
+
+        // New Message Sound Logic
+        if (!firstLoad && data && !isMuted) {
+            document.getElementById('notifSound').play().catch(e => console.log("Interaction needed for sound"));
+        }
+        firstLoad = false;
+
+        feedDiv.innerHTML = "";
+        if (!data) return feedDiv.innerHTML = "No posts yet.";
+
+        Object.keys(data).reverse().forEach(key => {
+            const post = data[key];
+            const dateObj = new Date(post.timestamp);
+            const fullDate = dateObj.toLocaleDateString() + " " + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            const div = document.createElement('div');
+            div.className = 'post';
+            div.innerHTML = `
+                <span class="delete-btn" onclick="deletePost('${key}')">Delete ✕</span>
+                <p>${post.message}</p>
+                ${post.link ? `<a href="${post.link.startsWith('http') ? post.link : 'https://' + post.link}" target="_blank">🔗 VIEW LINK</a>` : ''}
+                <div class="meta">
+                    <span>${fullDate}</span>
+                    <span class="time-ago" data-time="${post.timestamp}">${timeAgo(dateObj)}</span>
+                </div>
+            `;
+            feedDiv.appendChild(div);
+        });
+    });
+
+    setInterval(() => {
+        document.querySelectorAll('.time-ago').forEach(el => {
+            const time = parseInt(el.getAttribute('data-time'));
+            el.innerText = timeAgo(new Date(time));
+        });
+    }, 30000);
+
+    function deletePost(id) { if(confirm("Delete?")) db.child(id).remove(); }
+
+    function toggleAdmin() {
+        const panel = document.getElementById('adminPanel');
+        if (panel.style.display === 'block') {
+            panel.style.display = 'none';
+            document.body.classList.remove('admin-active');
+        } else {
+            if (prompt("Admin Access Code:") === "98778798743") {
+                panel.style.display = 'block';
+                document.body.classList.add('admin-active');
+            }
+        }
+    }
+</script>
+</body>
+</html>
