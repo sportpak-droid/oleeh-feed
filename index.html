@@ -7,24 +7,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        /* Default Dark Mode Variables */
-        :root { 
-            --primary: #00d1b2; 
-            --bg: #121212; 
-            --card: #1e1e1e; 
-            --text: #e0e0e0; 
-            --input-bg: #121212;
-            --border: #333;
-        }
-
-        /* Light Mode Variables */
-        [data-theme="light"] {
-            --bg: #f5f5f7;
-            --card: #ffffff;
-            --text: #1d1d1f;
-            --input-bg: #ffffff;
-            --border: #d2d2d7;
-        }
+        :root { --primary: #00d1b2; --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --input-bg: #121212; --border: #333; }
+        [data-theme="light"] { --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --input-bg: #ffffff; --border: #d2d2d7; }
 
         body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; transition: background 0.3s, color 0.3s; }
         .container { width: 100%; max-width: 500px; position: relative; }
@@ -32,12 +16,18 @@
         .controls { position: absolute; top: 0; right: 0; display: flex; gap: 8px; }
         .icon-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; }
         
-        h1 { text-align: center; color: var(--primary); cursor: pointer; user-select: none; margin-top: 50px; margin-bottom: 30px; }
+        h1 { text-align: center; color: var(--primary); cursor: pointer; user-select: none; margin-top: 50px; margin-bottom: 20px; }
         
+        /* Search Bar Styling */
+        .search-container { margin-bottom: 20px; position: relative; }
+        .search-input { width: 100%; padding: 10px 15px; border-radius: 25px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.9rem; outline: none; transition: border-color 0.3s; }
+        .search-input:focus { border-color: var(--primary); }
+
         #adminPanel { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none; border: 1px dashed var(--primary); }
         input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); box-sizing: border-box; }
         
         .post { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; position: relative; border-left: 5px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.1); animation: slideIn 0.3s ease-out; }
+        .post.hidden { display: none; } /* Used for search filtering */
         .post p { margin: 0 0 12px 0; line-height: 1.5; font-size: 1.1rem; }
         .post a { color: var(--primary); text-decoration: none; font-weight: bold; font-size: 0.9rem; display: block; margin-bottom: 10px; word-break: break-all; }
         
@@ -53,15 +43,15 @@
 
 <div class="container">
     <div class="controls">
-        <button class="icon-btn" onclick="toggleTheme()">
-            <span id="themeIcon">🌙</span>
-        </button>
-        <button class="icon-btn" id="muteBtn" onclick="toggleMute()">
-            <span id="muteIcon">🔊</span>
-        </button>
+        <button class="icon-btn" onclick="toggleTheme()"><span id="themeIcon">🌙</span></button>
+        <button class="icon-btn" id="muteBtn" onclick="toggleMute()"><span id="muteIcon">🔊</span></button>
     </div>
 
     <h1 onclick="toggleAdmin()">📡 Oleeh Feed</h1>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search messages or links..." onkeyup="filterPosts()">
+    </div>
 
     <div id="adminPanel">
         <strong>Admin Mode</strong>
@@ -83,7 +73,21 @@
     let firstLoad = true;
     let isMuted = false;
 
-    // --- Theme Toggle ---
+    // --- Search Filter Logic ---
+    function filterPosts() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const posts = document.querySelectorAll('.post');
+        
+        posts.forEach(post => {
+            const text = post.innerText.toLowerCase();
+            if (text.includes(query)) {
+                post.classList.remove('hidden');
+            } else {
+                post.classList.add('hidden');
+            }
+        });
+    }
+
     function toggleTheme() {
         const body = document.body;
         const icon = document.getElementById('themeIcon');
@@ -96,30 +100,20 @@
         }
     }
 
-    // --- Mute Toggle ---
     function toggleMute() {
         isMuted = !isMuted;
         document.getElementById('muteIcon').innerText = isMuted ? "🔇" : "🔊";
-        if (!isMuted) {
-            document.getElementById('notifSound').play().then(() => {
-                document.getElementById('notifSound').pause();
-            }).catch(e => {});
-        }
     }
 
-    // --- Admin Logic ---
     function toggleAdmin() {
         const panel = document.getElementById('adminPanel');
         if (panel.style.display === 'block') {
             panel.style.display = 'none';
             document.body.classList.remove('admin-active');
         } else {
-            // NEW ACCESS CODE
             if (prompt("Admin Access Code:") === "4542065") {
                 panel.style.display = 'block';
                 document.body.classList.add('admin-active');
-            } else {
-                alert("Incorrect code.");
             }
         }
     }
@@ -133,7 +127,6 @@
         document.getElementById('linkInput').value = "";
     }
 
-    // --- Live Feed Logic ---
     function timeAgo(date) {
         const seconds = Math.floor((new Date() - date) / 1000);
         let interval = Math.floor(seconds / 60);
@@ -144,7 +137,8 @@
         return Math.floor(interval / 24) + "d ago";
     }
 
-    db.limitToLast(50).on('value', (snapshot) => {
+    // Increased limit to 200 for better searching
+    db.limitToLast(200).on('value', (snapshot) => {
         const feedDiv = document.getElementById('feed');
         const data = snapshot.val();
 
@@ -174,6 +168,9 @@
             `;
             feedDiv.appendChild(div);
         });
+        
+        // Re-apply filter if user was searching when a new message arrived
+        filterPosts();
     });
 
     setInterval(() => {
