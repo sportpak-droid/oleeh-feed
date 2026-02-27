@@ -18,29 +18,29 @@
         
         h1 { text-align: center; color: var(--primary); cursor: pointer; user-select: none; margin-top: 50px; margin-bottom: 20px; }
         
-        /* Search: LTR layout, but RTL text input */
         .search-container { margin-bottom: 20px; }
-        .search-input { width: 100%; padding: 12px 20px; border-radius: 25px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.9rem; outline: none; box-sizing: border-box; text-align: right; direction: rtl; }
+        .search-input { width: 100%; padding: 12px 20px; border-radius: 25px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 1.1rem; outline: none; box-sizing: border-box; text-align: right; direction: rtl; }
 
-        #adminPanel { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none; border: 1px dashed var(--primary); }
+        #adminPanel { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 30px; display: none; border: 1px dashed var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         
-        /* Admin TextArea: RTL for Arabic writing */
-        textarea { width: 100%; height: 80px; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-family: inherit; resize: none; box-sizing: border-box; text-align: right; direction: rtl; }
+        /* Matched font size (1.1rem) to the post view */
+        textarea { width: 100%; height: 120px; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-family: inherit; font-size: 1.1rem; resize: none; box-sizing: border-box; text-align: right; direction: rtl; line-height: 1.6; }
         
-        .post { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; position: relative; border-left: 5px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.05); animation: slideIn 0.3s ease-out; }
+        .post { background: var(--card); padding: 25px 20px 20px 20px; border-radius: 12px; margin-bottom: 20px; position: relative; border-left: 5px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.05); animation: slideIn 0.3s ease-out; }
         .post.hidden { display: none; }
         
-        /* Message Text: RTL for Arabic content */
-        .post p { margin: 0 0 12px 0; line-height: 1.6; font-size: 1.1rem; white-space: pre-wrap; word-wrap: break-word; text-align: right; direction: rtl; }
+        /* Post Content */
+        .post p { margin: 10px 0 15px 0; line-height: 1.6; font-size: 1.1rem; white-space: pre-wrap; word-wrap: break-word; text-align: right; direction: rtl; }
         
-        .btn-link { color: var(--primary); text-decoration: none; font-weight: bold; font-size: 0.8rem; display: inline-block; margin-top: 5px; border: 1px solid var(--primary); padding: 5px 15px; border-radius: 5px; direction: ltr; }
+        .btn-link { color: var(--primary); text-decoration: none; font-weight: bold; font-size: 0.9rem; display: inline-block; border: 1px solid var(--primary); padding: 6px 18px; border-radius: 5px; direction: ltr; }
         
-        .meta { font-size: 0.7rem; color: #888; display: flex; gap: 15px; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 10px; direction: ltr; }
+        .meta { font-size: 0.75rem; color: #888; display: flex; gap: 15px; align-items: center; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 10px; direction: ltr; }
         .time-ago { color: var(--primary); font-weight: bold; }
         
-        .admin-tools { position: absolute; top: 10px; right: 10px; display: none; gap: 10px; }
+        /* Admin Tools - Increased size and spacing */
+        .admin-tools { position: absolute; top: -12px; right: 10px; display: none; gap: 15px; background: var(--bg); padding: 2px 10px; border-radius: 10px; }
         .admin-active .admin-tools { display: flex; }
-        .tool-btn { cursor: pointer; font-size: 0.75rem; font-weight: bold; }
+        .tool-btn { cursor: pointer; font-size: 0.95rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
         .del { color: #ff4444; }
         .edit { color: var(--primary); }
 
@@ -62,10 +62,13 @@
     </div>
 
     <div id="adminPanel">
-        <strong id="panelTitle">Admin Panel</strong>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <strong id="panelTitle" style="font-size: 1rem;">Admin Panel</strong>
+            <span id="cancelBtn" onclick="cancelEdit()" style="color:#ff4444; cursor:pointer; font-size:0.8rem; display:none;">Cancel Edit</span>
+        </div>
         <textarea id="msgInput" placeholder="Write message here..."></textarea>
         <input type="hidden" id="editingId" value="">
-        <button id="submitBtn" style="width:100%; padding:12px; background:var(--primary); border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="sendPost()">Broadcast</button>
+        <button id="submitBtn" style="width:100%; padding:14px; background:var(--primary); border:none; border-radius:8px; font-weight:bold; color:white; font-size:1rem; cursor:pointer;" onclick="sendPost()">Broadcast</button>
     </div>
 
     <div id="feed">Connecting...</div>
@@ -118,7 +121,7 @@
         const { cleanText, url } = processMessage(msg);
         
         const postData = {
-            message: cleanText || (url ? "External Link" : ""),
+            message: cleanText || (url ? "View Link Below" : ""),
             link: url || "",
             timestamp: Date.now()
         };
@@ -134,17 +137,21 @@
 
     function editPost(id, oldMsg, oldLink) {
         document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('cancelBtn').style.display = 'block';
         document.getElementById('msgInput').value = oldMsg + (oldLink ? "\n" + oldLink : "");
         document.getElementById('editingId').value = id;
         document.getElementById('panelTitle').innerText = "Editing Post...";
         document.getElementById('submitBtn').innerText = "Update Post";
-        window.scrollTo(0,0);
+        document.getElementById('msgInput').focus();
+        window.scrollTo({top: 0, behavior: 'smooth'});
     }
 
     function cancelEdit() {
         document.getElementById('editingId').value = "";
+        document.getElementById('msgInput').value = "";
         document.getElementById('panelTitle').innerText = "Admin Panel";
         document.getElementById('submitBtn').innerText = "Broadcast";
+        document.getElementById('cancelBtn').style.display = 'none';
     }
 
     db.limitToLast(200).on('value', (snapshot) => {
