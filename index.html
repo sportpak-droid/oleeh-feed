@@ -7,24 +7,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        /* MORNING VIEW (Default) */
-        :root { 
-            --bg: #f5f5f7;
-            --card: #ffffff;
-            --text: #1d1d1f;
-            --input-bg: #ffffff;
-            --border: #d2d2d7;
-            --primary: #00d1b2;
-        }
-
-        /* NIGHT MODE (Applied via data-theme) */
-        [data-theme="dark"] {
-            --bg: #121212; 
-            --card: #1e1e1e; 
-            --text: #e0e0e0; 
-            --input-bg: #121212;
-            --border: #333;
-        }
+        :root { --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --input-bg: #ffffff; --border: #d2d2d7; --primary: #00d1b2; }
+        [data-theme="dark"] { --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --input-bg: #121212; --border: #333; }
 
         body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; transition: background 0.3s, color 0.3s; }
         .container { width: 100%; max-width: 500px; position: relative; }
@@ -32,21 +16,21 @@
         .controls { position: absolute; top: 0; right: 0; display: flex; gap: 8px; }
         .icon-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         
-        h1 { text-align: center; color: var(--primary); cursor: pointer; user-select: none; margin-top: 50px; margin-bottom: 20px; text-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        h1 { text-align: center; color: var(--primary); cursor: pointer; user-select: none; margin-top: 50px; margin-bottom: 20px; }
         
-        .search-container { margin-bottom: 20px; position: relative; }
-        .search-input { width: 100%; padding: 12px 20px; border-radius: 25px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.9rem; outline: none; transition: border-color 0.3s; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .search-input:focus { border-color: var(--primary); }
+        .search-container { margin-bottom: 20px; }
+        .search-input { width: 100%; padding: 12px 20px; border-radius: 25px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.9rem; outline: none; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
 
         #adminPanel { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none; border: 1px dashed var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); box-sizing: border-box; }
+        textarea { width: 100%; height: 80px; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-family: inherit; resize: none; box-sizing: border-box; }
         
         .post { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; position: relative; border-left: 5px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.05); animation: slideIn 0.3s ease-out; }
         .post.hidden { display: none; }
-        .post p { margin: 0 0 12px 0; line-height: 1.5; font-size: 1.1rem; }
-        .post a { color: var(--primary); text-decoration: none; font-weight: bold; font-size: 0.9rem; display: block; margin-bottom: 10px; word-break: break-all; }
+        .post p { margin: 0 0 12px 0; line-height: 1.5; font-size: 1.1rem; white-space: pre-wrap; word-wrap: break-word; }
+        .post a.btn-link { color: var(--primary); text-decoration: none; font-weight: bold; font-size: 0.9rem; display: inline-block; margin-top: 5px; border: 1px solid var(--primary); padding: 5px 10px; border-radius: 5px; }
+        .post a.btn-link:hover { background: var(--primary); color: white; }
         
-        .meta { font-size: 0.75rem; color: #888; display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; }
+        .meta { font-size: 0.75rem; color: #888; display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 10px; }
         .time-ago { color: var(--primary); font-weight: bold; }
         
         .delete-btn { position: absolute; top: 10px; right: 10px; color: #ff4444; cursor: pointer; font-size: 0.8rem; display: none; }
@@ -54,7 +38,9 @@
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body data-theme="light"> <div class="container">
+<body data-theme="light">
+
+<div class="container">
     <div class="controls">
         <button class="icon-btn" onclick="toggleTheme()"><span id="themeIcon">🌙</span></button>
         <button class="icon-btn" id="muteBtn" onclick="toggleMute()"><span id="muteIcon">🔊</span></button>
@@ -63,13 +49,12 @@
     <h1 onclick="toggleAdmin()">📡 Oleeh Feed</h1>
 
     <div class="search-container">
-        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search messages or links..." onkeyup="filterPosts()">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search messages..." onkeyup="filterPosts()">
     </div>
 
     <div id="adminPanel">
         <strong>Admin Mode</strong>
-        <input type="text" id="msgInput" placeholder="Write a message...">
-        <input type="text" id="linkInput" placeholder="Link (http://...)">
+        <textarea id="msgInput" placeholder="Write message here. Links will be detected automatically..."></textarea>
         <button style="width:100%; padding:12px; background:var(--primary); border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="sendPost()">Broadcast</button>
     </div>
 
@@ -86,24 +71,25 @@
     let firstLoad = true;
     let isMuted = false;
 
+    // --- URL Detection Logic ---
+    function extractUrl(text) {
+        const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/gi;
+        const match = text.match(urlRegex);
+        return match ? match[0] : null;
+    }
+
     function toggleTheme() {
         const body = document.body;
         const icon = document.getElementById('themeIcon');
-        if (body.getAttribute('data-theme') === 'light') {
-            body.setAttribute('data-theme', 'dark');
-            icon.innerText = "☀️";
-        } else {
-            body.setAttribute('data-theme', 'light');
-            icon.innerText = "🌙";
-        }
+        const isLight = body.getAttribute('data-theme') === 'light';
+        body.setAttribute('data-theme', isLight ? 'dark' : 'light');
+        icon.innerText = isLight ? "☀️" : "🌙";
     }
 
     function filterPosts() {
         const query = document.getElementById('searchInput').value.toLowerCase();
-        const posts = document.querySelectorAll('.post');
-        posts.forEach(post => {
-            const text = post.innerText.toLowerCase();
-            post.classList.toggle('hidden', !text.includes(query));
+        document.querySelectorAll('.post').forEach(post => {
+            post.classList.toggle('hidden', !post.innerText.toLowerCase().includes(query));
         });
     }
 
@@ -127,11 +113,17 @@
 
     function sendPost() {
         const msg = document.getElementById('msgInput').value;
-        const url = document.getElementById('linkInput').value;
-        if(!msg) return alert("Enter a message");
-        db.push({ message: msg, link: url, timestamp: Date.now() });
+        if(!msg.trim()) return alert("Enter a message");
+
+        const foundUrl = extractUrl(msg);
+        
+        db.push({
+            message: msg,
+            link: foundUrl || "", // Automatically extracts link from text
+            timestamp: Date.now()
+        });
+
         document.getElementById('msgInput').value = "";
-        document.getElementById('linkInput').value = "";
     }
 
     function timeAgo(date) {
@@ -147,9 +139,7 @@
     db.limitToLast(200).on('value', (snapshot) => {
         const feedDiv = document.getElementById('feed');
         const data = snapshot.val();
-        if (!firstLoad && data && !isMuted) {
-            document.getElementById('notifSound').play().catch(e => {});
-        }
+        if (!firstLoad && data && !isMuted) document.getElementById('notifSound').play().catch(e => {});
         firstLoad = false;
         feedDiv.innerHTML = "";
         if (!data) return feedDiv.innerHTML = "No posts yet.";
@@ -158,12 +148,13 @@
             const post = data[key];
             const dateObj = new Date(post.timestamp);
             const fullDate = dateObj.toLocaleDateString() + " " + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
             const div = document.createElement('div');
             div.className = 'post';
             div.innerHTML = `
                 <span class="delete-btn" onclick="deletePost('${key}')">Delete ✕</span>
                 <p>${post.message}</p>
-                ${post.link ? `<a href="${post.link.startsWith('http') ? post.link : 'https://' + post.link}" target="_blank">🔗 VIEW LINK</a>` : ''}
+                ${post.link ? `<a href="${post.link.startsWith('http') ? post.link : 'https://' + post.link}" class="btn-link" target="_blank">🔗 VIEW LINK</a>` : ''}
                 <div class="meta">
                     <span>${fullDate}</span>
                     <span class="time-ago" data-time="${post.timestamp}">${timeAgo(dateObj)}</span>
@@ -176,8 +167,7 @@
 
     setInterval(() => {
         document.querySelectorAll('.time-ago').forEach(el => {
-            const time = parseInt(el.getAttribute('data-time'));
-            el.innerText = timeAgo(new Date(time));
+            el.innerText = timeAgo(new Date(parseInt(el.getAttribute('data-time'))));
         });
     }, 30000);
 
