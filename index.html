@@ -14,27 +14,36 @@
         .container { width: 100%; max-width: 500px; position: relative; }
         
         .controls { position: absolute; top: 0; right: 0; display: flex; gap: 8px; }
-        .icon-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .icon-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; }
         
         h1 { text-align: center; color: var(--primary); cursor: pointer; user-select: none; margin-top: 50px; margin-bottom: 20px; }
         
+        /* Search: LTR layout, but RTL text input */
         .search-container { margin-bottom: 20px; }
-        .search-input { width: 100%; padding: 12px 20px; border-radius: 25px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.9rem; outline: none; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .search-input { width: 100%; padding: 12px 20px; border-radius: 25px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 0.9rem; outline: none; box-sizing: border-box; text-align: right; direction: rtl; }
 
-        #adminPanel { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none; border: 1px dashed var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        textarea { width: 100%; height: 80px; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-family: inherit; resize: none; box-sizing: border-box; }
+        #adminPanel { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none; border: 1px dashed var(--primary); }
+        
+        /* Admin TextArea: RTL for Arabic writing */
+        textarea { width: 100%; height: 80px; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-family: inherit; resize: none; box-sizing: border-box; text-align: right; direction: rtl; }
         
         .post { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; position: relative; border-left: 5px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.05); animation: slideIn 0.3s ease-out; }
         .post.hidden { display: none; }
-        .post p { margin: 0 0 12px 0; line-height: 1.5; font-size: 1.1rem; white-space: pre-wrap; word-wrap: break-word; }
-        .post a.btn-link { color: var(--primary); text-decoration: none; font-weight: bold; font-size: 0.9rem; display: inline-block; margin-top: 5px; border: 1px solid var(--primary); padding: 5px 10px; border-radius: 5px; }
-        .post a.btn-link:hover { background: var(--primary); color: white; }
         
-        .meta { font-size: 0.75rem; color: #888; display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 10px; }
+        /* Message Text: RTL for Arabic content */
+        .post p { margin: 0 0 12px 0; line-height: 1.6; font-size: 1.1rem; white-space: pre-wrap; word-wrap: break-word; text-align: right; direction: rtl; }
+        
+        .btn-link { color: var(--primary); text-decoration: none; font-weight: bold; font-size: 0.8rem; display: inline-block; margin-top: 5px; border: 1px solid var(--primary); padding: 5px 15px; border-radius: 5px; direction: ltr; }
+        
+        .meta { font-size: 0.7rem; color: #888; display: flex; gap: 15px; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 10px; direction: ltr; }
         .time-ago { color: var(--primary); font-weight: bold; }
         
-        .delete-btn { position: absolute; top: 10px; right: 10px; color: #ff4444; cursor: pointer; font-size: 0.8rem; display: none; }
-        .admin-active .delete-btn { display: block; }
+        .admin-tools { position: absolute; top: 10px; right: 10px; display: none; gap: 10px; }
+        .admin-active .admin-tools { display: flex; }
+        .tool-btn { cursor: pointer; font-size: 0.75rem; font-weight: bold; }
+        .del { color: #ff4444; }
+        .edit { color: var(--primary); }
+
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -49,13 +58,14 @@
     <h1 onclick="toggleAdmin()">📡 Oleeh Feed</h1>
 
     <div class="search-container">
-        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search messages..." onkeyup="filterPosts()">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search messages..." onkeyup="filterPosts()">
     </div>
 
     <div id="adminPanel">
-        <strong>Admin Mode</strong>
-        <textarea id="msgInput" placeholder="Write message here. Links will be detected automatically..."></textarea>
-        <button style="width:100%; padding:12px; background:var(--primary); border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="sendPost()">Broadcast</button>
+        <strong id="panelTitle">Admin Panel</strong>
+        <textarea id="msgInput" placeholder="Write message here..."></textarea>
+        <input type="hidden" id="editingId" value="">
+        <button id="submitBtn" style="width:100%; padding:12px; background:var(--primary); border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="sendPost()">Broadcast</button>
     </div>
 
     <div id="feed">Connecting...</div>
@@ -71,11 +81,12 @@
     let firstLoad = true;
     let isMuted = false;
 
-    // --- URL Detection Logic ---
-    function extractUrl(text) {
+    function processMessage(text) {
         const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,})/gi;
         const match = text.match(urlRegex);
-        return match ? match[0] : null;
+        const url = match ? match[0] : null;
+        const cleanText = url ? text.replace(url, '').trim() : text;
+        return { cleanText, url };
     }
 
     function toggleTheme() {
@@ -86,25 +97,13 @@
         icon.innerText = isLight ? "☀️" : "🌙";
     }
 
-    function filterPosts() {
-        const query = document.getElementById('searchInput').value.toLowerCase();
-        document.querySelectorAll('.post').forEach(post => {
-            post.classList.toggle('hidden', !post.innerText.toLowerCase().includes(query));
-        });
-    }
-
-    function toggleMute() {
-        isMuted = !isMuted;
-        document.getElementById('muteIcon').innerText = isMuted ? "🔇" : "🔊";
-    }
-
     function toggleAdmin() {
         const panel = document.getElementById('adminPanel');
         if (panel.style.display === 'block') {
             panel.style.display = 'none';
             document.body.classList.remove('admin-active');
         } else {
-            if (prompt("Admin Access Code:") === "4542065") {
+            if (prompt("Access Code:") === "4542065") {
                 panel.style.display = 'block';
                 document.body.classList.add('admin-active');
             }
@@ -113,19 +112,78 @@
 
     function sendPost() {
         const msg = document.getElementById('msgInput').value;
-        if(!msg.trim()) return alert("Enter a message");
+        const editingId = document.getElementById('editingId').value;
+        if(!msg.trim()) return alert("Please enter a message");
 
-        const foundUrl = extractUrl(msg);
+        const { cleanText, url } = processMessage(msg);
         
-        db.push({
-            message: msg,
-            link: foundUrl || "", // Automatically extracts link from text
+        const postData = {
+            message: cleanText || (url ? "External Link" : ""),
+            link: url || "",
             timestamp: Date.now()
-        });
+        };
 
+        if(editingId) {
+            db.child(editingId).update(postData);
+            cancelEdit();
+        } else {
+            db.push(postData);
+        }
         document.getElementById('msgInput').value = "";
     }
 
+    function editPost(id, oldMsg, oldLink) {
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('msgInput').value = oldMsg + (oldLink ? "\n" + oldLink : "");
+        document.getElementById('editingId').value = id;
+        document.getElementById('panelTitle').innerText = "Editing Post...";
+        document.getElementById('submitBtn').innerText = "Update Post";
+        window.scrollTo(0,0);
+    }
+
+    function cancelEdit() {
+        document.getElementById('editingId').value = "";
+        document.getElementById('panelTitle').innerText = "Admin Panel";
+        document.getElementById('submitBtn').innerText = "Broadcast";
+    }
+
+    db.limitToLast(200).on('value', (snapshot) => {
+        const feedDiv = document.getElementById('feed');
+        const data = snapshot.val();
+        if (!firstLoad && data && !isMuted) document.getElementById('notifSound').play().catch(e => {});
+        firstLoad = false;
+        feedDiv.innerHTML = "";
+        if (!data) return feedDiv.innerHTML = "No posts found.";
+
+        Object.keys(data).reverse().forEach(key => {
+            const post = data[key];
+            const dateObj = new Date(post.timestamp);
+            const timeStr = dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            const div = document.createElement('div');
+            div.className = 'post';
+            div.innerHTML = `
+                <div class="admin-tools">
+                    <span class="tool-btn edit" onclick="editPost('${key}', \`${post.message}\`, '${post.link}')">Edit</span>
+                    <span class="tool-btn del" onclick="deletePost('${key}')">Delete</span>
+                </div>
+                <p>${post.message}</p>
+                ${post.link ? `<a href="${post.link.startsWith('http') ? post.link : 'https://' + post.link}" class="btn-link" target="_blank">🔗 VIEW LINK</a>` : ''}
+                <div class="meta">
+                    <span>${timeStr}</span>
+                    <span class="time-ago" data-time="${post.timestamp}">${timeAgo(dateObj)}</span>
+                </div>
+            `;
+            feedDiv.appendChild(div);
+        });
+    });
+
+    function filterPosts() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        document.querySelectorAll('.post').forEach(post => post.classList.toggle('hidden', !post.innerText.toLowerCase().includes(query)));
+    }
+    function toggleMute() { isMuted = !isMuted; document.getElementById('muteIcon').innerText = isMuted ? "🔇" : "🔊"; }
+    function deletePost(id) { if(confirm("Delete this post?")) db.child(id).remove(); }
     function timeAgo(date) {
         const seconds = Math.floor((new Date() - date) / 1000);
         let interval = Math.floor(seconds / 60);
@@ -135,43 +193,9 @@
         if (interval < 24) return interval + "h ago";
         return Math.floor(interval / 24) + "d ago";
     }
-
-    db.limitToLast(200).on('value', (snapshot) => {
-        const feedDiv = document.getElementById('feed');
-        const data = snapshot.val();
-        if (!firstLoad && data && !isMuted) document.getElementById('notifSound').play().catch(e => {});
-        firstLoad = false;
-        feedDiv.innerHTML = "";
-        if (!data) return feedDiv.innerHTML = "No posts yet.";
-
-        Object.keys(data).reverse().forEach(key => {
-            const post = data[key];
-            const dateObj = new Date(post.timestamp);
-            const fullDate = dateObj.toLocaleDateString() + " " + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            
-            const div = document.createElement('div');
-            div.className = 'post';
-            div.innerHTML = `
-                <span class="delete-btn" onclick="deletePost('${key}')">Delete ✕</span>
-                <p>${post.message}</p>
-                ${post.link ? `<a href="${post.link.startsWith('http') ? post.link : 'https://' + post.link}" class="btn-link" target="_blank">🔗 VIEW LINK</a>` : ''}
-                <div class="meta">
-                    <span>${fullDate}</span>
-                    <span class="time-ago" data-time="${post.timestamp}">${timeAgo(dateObj)}</span>
-                </div>
-            `;
-            feedDiv.appendChild(div);
-        });
-        filterPosts();
-    });
-
     setInterval(() => {
-        document.querySelectorAll('.time-ago').forEach(el => {
-            el.innerText = timeAgo(new Date(parseInt(el.getAttribute('data-time'))));
-        });
+        document.querySelectorAll('.time-ago').forEach(el => { el.innerText = timeAgo(new Date(parseInt(el.getAttribute('data-time')))); });
     }, 30000);
-
-    function deletePost(id) { if(confirm("Delete?")) db.child(id).remove(); }
 </script>
 </body>
 </html>
