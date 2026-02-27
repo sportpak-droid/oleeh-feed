@@ -14,7 +14,7 @@
         .container { width: 100%; max-width: 500px; position: relative; }
         
         .controls { position: absolute; top: 0; right: 0; display: flex; gap: 8px; z-index: 1001; }
-        .icon-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; }
+        .icon-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         
         h1 { text-align: center; color: var(--primary); cursor: pointer; user-select: none; margin-top: 50px; margin-bottom: 20px; }
         
@@ -48,6 +48,7 @@
 
 <div class="container">
     <div class="controls">
+        <button class="icon-btn" id="notifBtn" onclick="requestNotifPermission()"><span id="notifIcon">🔔</span></button>
         <button class="icon-btn" onclick="toggleTheme()"><span id="themeIcon">🌙</span></button>
         <button class="icon-btn" id="muteBtn" onclick="toggleMute()"><span id="muteIcon">🔊</span></button>
     </div>
@@ -55,7 +56,7 @@
     <h1 onclick="toggleAdmin()">📡 Oleeh Feed</h1>
 
     <div class="search-container">
-        <input type="text" id="searchInput" class="search-input" placeholder="Search messages..." onkeyup="filterPosts()">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search 500 messages..." onkeyup="filterPosts()">
     </div>
 
     <div id="adminPanel">
@@ -82,10 +83,49 @@
     let firstLoad = true;
     let isMuted = false;
 
-    // --- Enter to Send Logic ---
+    // --- Notification Logic ---
+    function updateNotifIcon() {
+        const icon = document.getElementById('notifIcon');
+        if (!("Notification" in window)) {
+            icon.innerText = "🚫";
+            return;
+        }
+        if (Notification.permission === "granted") {
+            icon.innerText = "🔔";
+            document.getElementById('notifBtn').style.borderColor = "var(--primary)";
+        } else if (Notification.permission === "denied") {
+            icon.innerText = "🔕";
+        } else {
+            icon.innerText = "🔔"; // Default state
+        }
+    }
+
+    function requestNotifPermission() {
+        if (!("Notification" in window)) return alert("Browser does not support notifications.");
+        Notification.requestPermission().then(permission => {
+            updateNotifIcon();
+            if (permission === "granted") {
+                new Notification("Oleeh Feed", { body: "Notifications enabled!" });
+            }
+        });
+    }
+
+    function notifyTeam(msg) {
+        if (!isMuted && Notification.permission === "granted" && document.hidden) {
+            const n = new Notification("📡 New Broadcast", {
+                body: msg,
+                icon: "https://cdn-icons-png.flaticon.com/512/1152/1152912.png"
+            });
+            n.onclick = () => { window.focus(); n.close(); };
+        }
+    }
+
+    // Initialize Notif Icon
+    updateNotifIcon();
+
     function handleEnter(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault(); // Prevents new line
+            e.preventDefault();
             sendPost();
         }
     }
@@ -162,7 +202,13 @@
     db.limitToLast(500).on('value', (snapshot) => {
         const feedDiv = document.getElementById('feed');
         const data = snapshot.val();
-        if (!firstLoad && data && !isMuted) document.getElementById('notifSound').play().catch(e => {});
+        
+        if (!firstLoad && data) {
+            const lastPost = Object.values(data).pop();
+            if (!isMuted) document.getElementById('notifSound').play().catch(e => {});
+            notifyTeam(lastPost.message);
+        }
+
         firstLoad = false;
         feedDiv.innerHTML = "";
         if (!data) return feedDiv.innerHTML = "No posts found.";
