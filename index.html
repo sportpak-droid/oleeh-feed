@@ -7,24 +7,41 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --primary: #00d1b2; --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; }
-        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        /* Default Dark Mode Variables */
+        :root { 
+            --primary: #00d1b2; 
+            --bg: #121212; 
+            --card: #1e1e1e; 
+            --text: #e0e0e0; 
+            --input-bg: #121212;
+            --border: #333;
+        }
+
+        /* Light Mode Variables */
+        [data-theme="light"] {
+            --bg: #f5f5f7;
+            --card: #ffffff;
+            --text: #1d1d1f;
+            --input-bg: #ffffff;
+            --border: #d2d2d7;
+        }
+
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; transition: background 0.3s, color 0.3s; }
         .container { width: 100%; max-width: 500px; position: relative; }
         
-        /* Mute Button Styling */
-        .volume-toggle { position: absolute; top: 0; right: 0; background: #2a2a2a; border: 1px solid #444; color: var(--text); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; transition: 0.2s; }
-        .volume-toggle:hover { background: #3a3a3a; }
-        .is-muted { border-color: #ff4444; color: #ff4444; }
-
-        h1 { text-align: center; color: var(--primary); cursor: pointer; user-select: none; margin-bottom: 30px; }
-        #adminPanel { background: #2a2a2a; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none; border: 1px dashed var(--primary); }
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #333; background: #121212; color: white; box-sizing: border-box; }
+        .controls { position: absolute; top: 0; right: 0; display: flex; gap: 8px; }
+        .icon-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 5px; }
         
-        .post { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; position: relative; border-left: 5px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.3); animation: slideIn 0.3s ease-out; }
+        h1 { text-align: center; color: var(--primary); cursor: pointer; user-select: none; margin-top: 50px; margin-bottom: 30px; }
+        
+        #adminPanel { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; display: none; border: 1px dashed var(--primary); }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); box-sizing: border-box; }
+        
+        .post { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; position: relative; border-left: 5px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.1); animation: slideIn 0.3s ease-out; }
         .post p { margin: 0 0 12px 0; line-height: 1.5; font-size: 1.1rem; }
         .post a { color: var(--primary); text-decoration: none; font-weight: bold; font-size: 0.9rem; display: block; margin-bottom: 10px; word-break: break-all; }
         
-        .meta { font-size: 0.75rem; color: #888; display: flex; gap: 10px; align-items: center; border-top: 1px solid #333; padding-top: 10px; }
+        .meta { font-size: 0.75rem; color: #888; display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; }
         .time-ago { color: var(--primary); font-weight: bold; }
         
         .delete-btn { position: absolute; top: 10px; right: 10px; color: #ff4444; cursor: pointer; font-size: 0.8rem; display: none; }
@@ -35,9 +52,14 @@
 <body>
 
 <div class="container">
-    <button class="volume-toggle" id="muteBtn" onclick="toggleMute()">
-        <span id="muteIcon">🔊</span> <span id="muteText">Sound On</span>
-    </button>
+    <div class="controls">
+        <button class="icon-btn" onclick="toggleTheme()">
+            <span id="themeIcon">🌙</span>
+        </button>
+        <button class="icon-btn" id="muteBtn" onclick="toggleMute()">
+            <span id="muteIcon">🔊</span>
+        </button>
+    </div>
 
     <h1 onclick="toggleAdmin()">📡 Oleeh Feed</h1>
 
@@ -61,25 +83,44 @@
     let firstLoad = true;
     let isMuted = false;
 
+    // --- Theme Toggle ---
+    function toggleTheme() {
+        const body = document.body;
+        const icon = document.getElementById('themeIcon');
+        if (body.getAttribute('data-theme') === 'light') {
+            body.removeAttribute('data-theme');
+            icon.innerText = "🌙";
+        } else {
+            body.setAttribute('data-theme', 'light');
+            icon.innerText = "☀️";
+        }
+    }
+
+    // --- Mute Toggle ---
     function toggleMute() {
         isMuted = !isMuted;
-        const btn = document.getElementById('muteBtn');
-        const icon = document.getElementById('muteIcon');
-        const text = document.getElementById('muteText');
-
-        if (isMuted) {
-            btn.classList.add('is-muted');
-            icon.innerText = "🔇";
-            text.innerText = "Muted";
-        } else {
-            btn.classList.remove('is-muted');
-            icon.innerText = "🔊";
-            text.innerText = "Sound On";
-            // Play a tiny sound to "unlock" the browser audio permission
+        document.getElementById('muteIcon').innerText = isMuted ? "🔇" : "🔊";
+        if (!isMuted) {
             document.getElementById('notifSound').play().then(() => {
                 document.getElementById('notifSound').pause();
-                document.getElementById('notifSound').currentTime = 0;
-            }).catch(e => console.log("Audio unlock failed"));
+            }).catch(e => {});
+        }
+    }
+
+    // --- Admin Logic ---
+    function toggleAdmin() {
+        const panel = document.getElementById('adminPanel');
+        if (panel.style.display === 'block') {
+            panel.style.display = 'none';
+            document.body.classList.remove('admin-active');
+        } else {
+            // NEW ACCESS CODE
+            if (prompt("Admin Access Code:") === "4542065") {
+                panel.style.display = 'block';
+                document.body.classList.add('admin-active');
+            } else {
+                alert("Incorrect code.");
+            }
         }
     }
 
@@ -92,6 +133,7 @@
         document.getElementById('linkInput').value = "";
     }
 
+    // --- Live Feed Logic ---
     function timeAgo(date) {
         const seconds = Math.floor((new Date() - date) / 1000);
         let interval = Math.floor(seconds / 60);
@@ -106,9 +148,8 @@
         const feedDiv = document.getElementById('feed');
         const data = snapshot.val();
 
-        // New Message Sound Logic
         if (!firstLoad && data && !isMuted) {
-            document.getElementById('notifSound').play().catch(e => console.log("Interaction needed for sound"));
+            document.getElementById('notifSound').play().catch(e => {});
         }
         firstLoad = false;
 
@@ -143,19 +184,6 @@
     }, 30000);
 
     function deletePost(id) { if(confirm("Delete?")) db.child(id).remove(); }
-
-    function toggleAdmin() {
-        const panel = document.getElementById('adminPanel');
-        if (panel.style.display === 'block') {
-            panel.style.display = 'none';
-            document.body.classList.remove('admin-active');
-        } else {
-            if (prompt("Admin Access Code:") === "4542065") {
-                panel.style.display = 'block';
-                document.body.classList.add('admin-active');
-            }
-        }
-    }
 </script>
 </body>
 </html>
